@@ -46,4 +46,3 @@ jobs:
       release-bucket-id: ${{ needs.infrastructure.outputs.release-bucket-id }}
       distribution-id: ${{ needs.infrastructure.outputs.distribution-id }}
       site-url: ${{ needs.infrastructure.outputs.site-url }}
-

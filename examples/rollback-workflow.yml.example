@@ -24,4 +24,3 @@ jobs:
       release-bucket-id: ${{ vars.RELEASE_BUCKET }}
       distribution-id: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
       site-url: ${{ vars.SITE_URL }}
-

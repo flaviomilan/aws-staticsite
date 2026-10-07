@@ -76,4 +76,3 @@ resource "aws_s3_bucket_policy" "cdn_oac_bucket_policy" {
   bucket = aws_s3_bucket.s3_bucket[0].id
   policy = data.aws_iam_policy_document.s3_bucket_policy.json
 }
-
