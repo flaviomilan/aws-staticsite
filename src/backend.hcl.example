@@ -1,0 +1,6 @@
+bucket = "change-me-existing-state-bucket"
+key = "staticsite/terraform.tfstate"
+region = "us-east-1"
+encrypt = true
+use_lockfile = true
+# Keep dynamodb_table = "terraform-locks" during the dual-lock migration.

@@ -1,0 +1,10 @@
+# Copy to site.hcl; this file contains configuration, never credentials.
+aws_region = "sa-east-1"
+domain = "example.com"
+aliases = ["www.example.com"]
+bucket_name = "change-me-globally-unique-site"
+hosted_zone_id = "Z0123456789EXAMPLE"
+project_name = "MySite"
+environment = "production"
+routing_mode = "static"
+redirect_aliases = true

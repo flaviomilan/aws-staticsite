@@ -1,0 +1,4 @@
+state_bucket_name = "change-me-globally-unique-state"
+aws_region = "us-east-1"
+# false only for a NEW backend; keep true for existing DynamoDB installations.
+enable_legacy_lock_table = false

@@ -1,0 +1,5 @@
+bucket = "change-me-terraform-state"
+key = "sites/example/staging.tfstate"
+region = "us-east-1"
+encrypt = true
+use_lockfile = true

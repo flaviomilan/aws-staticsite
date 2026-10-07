@@ -25,3 +25,9 @@ variable "environment" {
   default     = "production"
   description = "Environment name for resource tagging."
 }
+
+variable "enable_legacy_lock_table" {
+  type        = bool
+  default     = true
+  description = "Preserve old tables during migration. Set false only for new backends or after all clients use S3 locking."
+}

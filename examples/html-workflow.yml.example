@@ -1,0 +1,49 @@
+# Copy to your site's .github/workflows/site.yml, replace KIT_COMMIT_SHA,
+# see docs/github-actions.md. This workflow publishes the static files in site/.
+name: Site
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: site
+          path: site
+          if-no-files-found: error
+  infrastructure:
+    uses: flaviomilan/aws-staticsite/.github/workflows/infrastructure.yml@KIT_COMMIT_SHA
+    with:
+      kit-ref: KIT_COMMIT_SHA
+      site-id: example
+      environment: production
+      aws-region: sa-east-1
+      working-directory: infra
+      backend-config-file: backend.hcl
+      var-file: site.hcl
+      dns-zone-id: ${{ vars.HOSTED_ZONE_ID }}
+      apply: true
+      aws-role-arn: ${{ vars.AWS_INFRA_ROLE_ARN }}
+
+  publish:
+    needs: [build, infrastructure]
+    uses: flaviomilan/aws-staticsite/.github/workflows/publish.yml@KIT_COMMIT_SHA
+    with:
+      kit-ref: KIT_COMMIT_SHA
+      site-id: example
+      environment: production
+      aws-region: sa-east-1
+      aws-role-arn: ${{ vars.AWS_PUBLISH_ROLE_ARN }}
+      artifact-name: site
+      bucket-id: ${{ needs.infrastructure.outputs.bucket-id }}
+      release-bucket-id: ${{ needs.infrastructure.outputs.release-bucket-id }}
+      distribution-id: ${{ needs.infrastructure.outputs.distribution-id }}
+      site-url: ${{ needs.infrastructure.outputs.site-url }}
+

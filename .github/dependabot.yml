@@ -38,3 +38,38 @@ updates:
       actions-dependencies:
         patterns:
           - "*"
+
+  - package-ecosystem: "terraform"
+    directory: "/modules/static-site"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "terraform"
+    directory: "/modules/github-oidc"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "terraform"
+    directory: "/examples/existing-zone"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "terraform"
+    directory: "/examples/production"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "terraform"
+    directory: "/examples/dns"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "npm"
+    directory: "/examples/astro"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: terraform
+    directory: /examples/github-oidc
+    schedule:
+      interval: weekly

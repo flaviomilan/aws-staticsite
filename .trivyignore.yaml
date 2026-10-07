@@ -1,0 +1,8 @@
+misconfigurations:
+  - id: AWS-0132
+    paths:
+      - modules/static-site/s3.tf
+      - modules/static-site/releases.tf
+      - modules/static-site/logging.tf
+      - bootstrap/main.tf
+    statement: SSE-S3 is an intentional encrypted-at-rest baseline for public static content, private releases, logs and state. Customer-managed KMS requires separate key permissions, regional key handling and recurring cost. Public access is blocked and TLS is enforced; use a reviewed KMS extension where required.
