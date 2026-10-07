@@ -38,6 +38,14 @@ override.tf.json
 .terraformrc
 terraform.rc
 
-.terraform.lock.hcl
 
 # End of https://www.toptal.com/developers/gitignore/api/terraform
+
+*.tfplan
+*tfplan*
+__pycache__/
+.venv/
+node_modules/
+dist/
+
+.astro/

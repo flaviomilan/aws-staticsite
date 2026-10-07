@@ -1,67 +1,70 @@
-name: PR Quality Check
-
+name: Quality checks
 on:
   pull_request:
-    branches:
-      - main
-
+  push:
+    branches: [main]
+  workflow_call:
 permissions:
   contents: read
-  pull-requests: write
-
 jobs:
-  terraform-check:
-    name: "🔍 Terraform Validation"
+  terraform:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        root: [src, bootstrap, examples/dns, examples/existing-zone, examples/production, examples/github-oidc, modules/github-oidc]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
-
-      - name: Terraform Format Check
-        run: terraform fmt -check -recursive
-        working-directory: ./src
-
-      - name: Terraform Init
-        run: terraform init -backend=false
-        working-directory: ./src
-
-      - name: Terraform Validate
-        run: terraform validate
-        working-directory: ./src
-
-  security-scan:
-    name: "🛡️ Security Scan"
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Run tfsec
-        uses: aquasecurity/tfsec-action@v1.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          working_directory: src
-
-  bootstrap-check:
-    name: "🔍 Bootstrap Validation"
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
+        with:
+          terraform_version: 1.10.5
+          terraform_wrapper: false
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false -lockfile=readonly
+        working-directory: ${{ matrix.root }}
+      - run: terraform validate
+        working-directory: ${{ matrix.root }}
+      - run: terraform test
+        working-directory: ${{ matrix.root }}
+  behavior:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
-
-      - name: Terraform Format Check
-        run: terraform fmt -check -recursive
-        working-directory: ./bootstrap
-
-      - name: Terraform Init
-        run: terraform init -backend=false
-        working-directory: ./bootstrap
-
-      - name: Terraform Validate
-        run: terraform validate
-        working-directory: ./bootstrap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
+        with:
+          terraform_version: 1.10.5
+          terraform_wrapper: false
+      - run: terraform init -backend=false -lockfile=readonly
+        working-directory: modules/static-site
+      - run: terraform test
+        working-directory: modules/static-site
+      - run: python3 -m unittest discover -s tests -v
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - run: node --test tests/routing.test.cjs
+      - name: Build Astro example
+        working-directory: examples/astro
+        run: |
+          npm ci --ignore-scripts --no-fund --no-audit
+          npm run build
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install verification tools
+        run: python3 scripts/install_check_tools.py "$RUNNER_TEMP/check-tools" actionlint trivy
+      - name: Check workflow syntax and shell usage
+        run: '"$RUNNER_TEMP/check-tools/actionlint"'
+      - name: Check infrastructure security
+        run: '"$RUNNER_TEMP/check-tools/trivy" config --ignorefile .trivyignore.yaml --exit-code 1 --severity HIGH,CRITICAL --skip-dirs .git --skip-dirs examples/astro/node_modules .'

@@ -1,0 +1,6 @@
+# Preserve the exact values from the existing installation.
+domain = "example.com"
+bucket_name = "change-me-existing-bucket"
+aws_region = "us-east-1"
+domain_enabled = true
+# Copy all existing WAF, monitoring, versioning and security settings too.

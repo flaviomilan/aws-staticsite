@@ -1,0 +1,17 @@
+aws_region = "sa-east-1"
+repository = "YOUR_OWNER/YOUR_SITE_REPOSITORY"
+environment = "production"
+name_prefix = "mysite-production"
+domain = "example.com"
+aliases = ["www.example.com"]
+hosted_zone_id = "Z0123456789EXAMPLE"
+bucket_name = "change-me-globally-unique-site"
+release_bucket_name = "COPY_RELEASE_BUCKET_OUTPUT"
+distribution_id = "COPY_DISTRIBUTION_OUTPUT"
+state_bucket_name = "change-me-globally-unique-state"
+site_state_key = "sites/mysite/production.tfstate"
+# Match optional resources in site.hcl before enabling them in CI.
+enable_waf = false
+enable_monitoring = false
+enable_access_logs = false
+enable_additional_metrics = false

@@ -1,5 +1,6 @@
 terraform {
-  required_version = ">= 1.5.0"
+  required_version = ">= 1.10, < 2.0"
+  backend "s3" {}
 
   required_providers {
     aws = {
@@ -56,6 +57,11 @@ resource "aws_s3_bucket_public_access_block" "terraform_state" {
   restrict_public_buckets = true
 }
 
+resource "aws_s3_bucket_ownership_controls" "terraform_state" {
+  bucket = aws_s3_bucket.terraform_state.id
+  rule { object_ownership = "BucketOwnerEnforced" }
+}
+
 resource "aws_s3_bucket_lifecycle_configuration" "terraform_state" {
   bucket = aws_s3_bucket.terraform_state.id
 
@@ -73,6 +79,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "terraform_state" {
 
 # DynamoDB table for state locking
 resource "aws_dynamodb_table" "terraform_locks" {
+  count        = var.enable_legacy_lock_table ? 1 : 0
   name         = var.lock_table_name
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "LockID"
@@ -91,4 +98,31 @@ resource "aws_dynamodb_table" "terraform_locks" {
     Environment = var.environment
     ManagedBy   = "terraform"
   }
+}
+
+moved {
+  from = aws_dynamodb_table.terraform_locks
+  to   = aws_dynamodb_table.terraform_locks[0]
+}
+
+data "aws_iam_policy_document" "state_transport" {
+  statement {
+    sid       = "DenyInsecureTransport"
+    effect    = "Deny"
+    actions   = ["s3:*"]
+    resources = [aws_s3_bucket.terraform_state.arn, "${aws_s3_bucket.terraform_state.arn}/*"]
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+}
+resource "aws_s3_bucket_policy" "state_transport" {
+  bucket = aws_s3_bucket.terraform_state.id
+  policy = data.aws_iam_policy_document.state_transport.json
 }

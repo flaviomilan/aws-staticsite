@@ -1,0 +1,26 @@
+# Copy to the consumer repository, configure destinations, and pin KIT_COMMIT_SHA.
+name: Restore site
+on:
+  workflow_dispatch:
+    inputs:
+      release-id:
+        description: Full SHA of an archived release
+        type: string
+        required: true
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  rollback:
+    uses: flaviomilan/aws-staticsite/.github/workflows/rollback.yml@KIT_COMMIT_SHA
+    with:
+      kit-ref: KIT_COMMIT_SHA
+      site-id: example
+      environment: production
+      aws-region: sa-east-1
+      release-id: ${{ inputs.release-id }}
+      aws-role-arn: ${{ vars.AWS_PUBLISH_ROLE_ARN }}
+      bucket-id: ${{ vars.SITE_BUCKET }}
+      release-bucket-id: ${{ vars.RELEASE_BUCKET }}
+      distribution-id: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
+      site-url: ${{ vars.SITE_URL }}

@@ -31,13 +31,18 @@ variable "domain" {
 
 variable "files_path" {
   type        = string
-  description = "The path to the static site files to be uploaded to the S3 bucket."
+  default     = ""
+  description = "Deprecated; publish artifacts with the content workflow instead."
 }
 
 variable "domain_enabled" {
   type        = bool
-  default     = false
-  description = "Enable or disable the creation of domain-related resources (ACM, CloudFront, S3, WAF). Set to true after DNS nameservers are configured."
+  default     = true
+  description = "Deprecated migration input. False is rejected to prevent destruction; use examples/dns for new zones."
+  validation {
+    condition     = var.domain_enabled
+    error_message = "domain_enabled=false is no longer supported; manage initial DNS separately."
+  }
 }
 
 variable "enable_waf" {
@@ -89,7 +94,7 @@ variable "waf_rate_limit" {
 variable "enable_monitoring" {
   type        = bool
   default     = false
-  description = "Enable CloudWatch monitoring dashboards, alarms, and CloudFront real-time metrics. Adds ~$10-15/month (dashboard $3 + real-time metrics ~$7-10)."
+  description = "Enable dashboard and alarms; additional metrics are now independent."
 }
 
 variable "notification_email" {
@@ -113,4 +118,47 @@ variable "enable_s3_versioning" {
   type        = bool
   default     = false
   description = "Enable S3 bucket versioning to keep old file versions. Adds storage costs for non-current object versions (cleaned up after 30 days via lifecycle rule)."
+}
+variable "routing_mode" {
+  type        = string
+  default     = "static"
+  description = "static resolves directories; spa rewrites extensionless navigation paths to the root index."
+  validation {
+    condition     = contains(["static", "spa"], var.routing_mode)
+    error_message = "routing_mode must be static or spa."
+  }
+}
+
+variable "hsts_include_subdomains" {
+  type        = bool
+  default     = true
+  description = "Enable only when every subdomain supports HTTPS."
+}
+
+variable "hsts_preload" {
+  type        = bool
+  default     = true
+  description = "Advertise HSTS preload eligibility; does not submit the domain to the preload list."
+  validation {
+    condition     = !var.hsts_preload || var.hsts_include_subdomains
+    error_message = "HSTS preload requires include_subdomains."
+  }
+}
+
+variable "redirect_aliases" {
+  type        = bool
+  default     = false
+  description = "Redirect configured aliases to the canonical hostname."
+}
+
+variable "enable_access_logs" {
+  type        = bool
+  default     = false
+  description = "Enable standard logging v2 to a private S3 bucket."
+}
+
+variable "enable_additional_metrics" {
+  type        = bool
+  default     = null
+  description = "Subscribe to paid CloudFront metrics including CacheHitRate."
 }

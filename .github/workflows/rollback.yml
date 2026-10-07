@@ -1,0 +1,107 @@
+name: Reusable rollback
+on:
+  workflow_call:
+    inputs:
+      kit-repository:
+        type: string
+        default: flaviomilan/aws-staticsite
+      kit-ref:
+        description: Immutable kit commit SHA, matching the workflow version being called.
+        type: string
+        required: true
+      aws-role-arn:
+        description: OIDC role ARN; explicit input takes precedence over legacy secrets.
+        type: string
+        default: ''
+      site-id:
+        type: string
+        required: true
+      environment:
+        type: string
+        required: true
+      aws-region:
+        type: string
+        default: us-east-1
+      release-id:
+        description: Full SHA of a completed archived release.
+        type: string
+        required: true
+      bucket-id:
+        type: string
+        required: true
+      release-bucket-id:
+        type: string
+        required: true
+      distribution-id:
+        type: string
+        required: true
+      site-url:
+        type: string
+        required: true
+    secrets:
+      AWS_ROLE_ARN:
+        required: false
+      AWS_ACCESS_KEY_ID:
+        required: false
+      AWS_SECRET_ACCESS_KEY:
+        required: false
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: content-${{ github.repository }}-${{ inputs.site-id }}-${{ inputs.environment }}
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.event_name != 'pull_request' && github.event_name != 'pull_request_target'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ inputs.environment }}
+    env:
+      AWS_ROLE_ARN: ${{ inputs.aws-role-arn || secrets.AWS_ROLE_ARN }}
+      BUCKET_ID: ${{ inputs.bucket-id }}
+      RELEASE_BUCKET_ID: ${{ inputs.release-bucket-id }}
+      DISTRIBUTION_ID: ${{ inputs.distribution-id }}
+      SITE_URL: ${{ inputs.site-url }}
+    steps:
+      - name: Require immutable kit version
+        env:
+          KIT_REF: ${{ inputs.kit-ref }}
+        run: '[[ "$KIT_REF" =~ ^[0-9a-f]{40}$ ]]'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ inputs.kit-repository }}
+          ref: ${{ inputs.kit-ref }}
+          path: .static-site-kit
+          persist-credentials: false
+      - name: Configure AWS via OIDC
+        if: env.AWS_ROLE_ARN != ''
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ inputs.aws-region }}
+      - name: Configure legacy credentials (migration only)
+        if: env.AWS_ROLE_ARN == ''
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.aws-region }}
+      - name: Restore archived release
+        env:
+          RELEASE_ID: ${{ inputs.release-id }}
+        run: |
+          python3 .static-site-kit/scripts/publish.py rollback \
+            --release-id "$RELEASE_ID" \
+            --bucket "$BUCKET_ID" --release-bucket "$RELEASE_BUCKET_ID" \
+            --distribution-id "$DISTRIBUTION_ID"
+      - name: Check HTTPS delivery
+        run: python3 .static-site-kit/scripts/smoke.py "$SITE_URL" "$DISTRIBUTION_ID"
+      - name: Rollback summary
+        env:
+          RELEASE_ID: ${{ inputs.release-id }}
+        run: |
+          printf "Restored commit \`%s\` at %s\n" "$RELEASE_ID" "$SITE_URL" >> "$GITHUB_STEP_SUMMARY"
