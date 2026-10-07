@@ -28,7 +28,7 @@ Publication and rollback retain old keys and are not atomic. The implementation 
 
 The user setup guides were checked locally for existing file links and heading anchors, Bash syntax and forwarding of every hosting option in both runnable profiles. The HTML, npm-build and rollback workflow templates pass actionlint. The identity example validates and its policy tests use provider mocks; no live IAM role assumption was attempted. Trivy passes the HIGH/CRITICAL gate with the existing scoped exception.
 
-For contributing changes, run the relevant checks locally:
+For contributing changes, install [ShellCheck](https://github.com/koalaman/shellcheck#installing) as well as the verification tools below. Actionlint silently skips shell checks if ShellCheck is absent, so its availability must be verified for a CI-equivalent local check. Run the relevant checks locally:
 
 ```bash
 terraform fmt -check -recursive
@@ -40,8 +40,9 @@ terraform -chdir=modules/static-site test
 python3 -m unittest discover -s tests -v
 node --test tests/routing.test.cjs
 python3 scripts/install_check_tools.py /tmp/static-site-checks actionlint trivy
-/tmp/static-site-checks/actionlint
-/tmp/static-site-checks/actionlint examples/consumer-workflow.yml.example examples/html-workflow.yml.example examples/rollback-workflow.yml.example
+command -v shellcheck
+/tmp/static-site-checks/actionlint -shellcheck "$(command -v shellcheck)"
+/tmp/static-site-checks/actionlint -shellcheck "$(command -v shellcheck)" examples/consumer-workflow.yml.example examples/html-workflow.yml.example examples/rollback-workflow.yml.example
 /tmp/static-site-checks/trivy config --ignorefile .trivyignore.yaml --exit-code 1 --severity HIGH,CRITICAL --skip-dirs .git --skip-dirs examples/astro/node_modules .
 git diff --check
 ```

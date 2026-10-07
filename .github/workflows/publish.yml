@@ -103,4 +103,4 @@ jobs:
         run: python3 .static-site-kit/scripts/smoke.py "$SITE_URL" "$DISTRIBUTION_ID"
       - name: Deployment summary
         run: |
-          printf 'Published commit `%s` to %s\n' "$GITHUB_SHA" "$SITE_URL" >> "$GITHUB_STEP_SUMMARY"
+          printf "Published commit \`%s\` to %s\n" "$GITHUB_SHA" "$SITE_URL" >> "$GITHUB_STEP_SUMMARY"

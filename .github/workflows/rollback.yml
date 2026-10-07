@@ -104,4 +104,4 @@ jobs:
         env:
           RELEASE_ID: ${{ inputs.release-id }}
         run: |
-          printf 'Restored commit `%s` at %s\n' "$RELEASE_ID" "$SITE_URL" >> "$GITHUB_STEP_SUMMARY"
+          printf "Restored commit \`%s\` at %s\n" "$RELEASE_ID" "$SITE_URL" >> "$GITHUB_STEP_SUMMARY"
